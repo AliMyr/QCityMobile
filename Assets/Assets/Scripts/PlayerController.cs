@@ -1,5 +1,3 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
 [RequireComponent(typeof(Rigidbody), typeof(BoxCollider))]
@@ -9,7 +7,7 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private FixedJoystick _joystick;
     [SerializeField] private Transform _cameraTransform; // Ссылка на камеру
 
-    [SerializeField] private float _moveSpeed;
+    [SerializeField] private float _moveSpeed = 5f;
 
     private void Start()
     {
@@ -25,22 +23,26 @@ public class PlayerController : MonoBehaviour
         float horizontalInput = _joystick.Horizontal;
         float verticalInput = _joystick.Vertical;
 
-        // Получаем направления камеры
+        // Если нет ввода, не двигаем персонажа
+        if (horizontalInput == 0 && verticalInput == 0)
+            return;
+
+        // Получаем направление, куда смотрит камера
         Vector3 forward = _cameraTransform.forward;
         Vector3 right = _cameraTransform.right;
 
-        // Игнорируем вертикальную составляющую направления
+        // Игнорируем вертикальную составляющую направления камеры
         forward.y = 0f;
         right.y = 0f;
 
-        // Нормализуем направления, чтобы не было ускорения при движении по диагонали
+        // Нормализуем направления, чтобы избежать ускорения при движении по диагонали
         forward.Normalize();
         right.Normalize();
 
-        // Вычисляем вектор движения
-        Vector3 moveDirection = forward * verticalInput + right * horizontalInput;
+        // Вычисляем направление движения с учетом направления камеры
+        Vector3 moveDirection = (forward * verticalInput + right * horizontalInput).normalized;
 
-        // Задаем скорость персонажа с учётом направления камеры
-        _rigidbody.velocity = new Vector3(moveDirection.x * _moveSpeed, _rigidbody.velocity.y, moveDirection.z * _moveSpeed);
+        // Применяем движение персонажа
+        _rigidbody.MovePosition(_rigidbody.position + moveDirection * _moveSpeed * Time.fixedDeltaTime);
     }
 }
