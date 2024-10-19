@@ -2,11 +2,11 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class PlayerMove : MonoBehaviour
+public class MovePlayer : MonoBehaviour
 {
     private Rigidbody rb;
-    public float speed = 10f;  // Скорость движения персонажа
-    public float mouseSensitivity = 500f;  // Чувствительность мыши
+    public float speed = 5f;  // Скорость движения персонажа
+    public float mouseSensitivity = 100f;  // Чувствительность мыши
     public Transform playerCamera;  // Ссылка на камеру персонажа (для управления головой)
     private Vector3 moveVector;
 
