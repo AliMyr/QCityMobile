@@ -5,7 +5,7 @@ public class CameraController : MonoBehaviour
     public float sensitivity = 2.0f; // Чувствительность мыши
     public float sensitivityJoystick = 1.0f; // Чувствительность джойстика
     public float maxYAngle = 80.0f; // Максимальный угол вращения по вертикали
-    public Joystick joystick;
+    public Joystick joystick; // Джойстик для управления поворотом
     private float rotationX = 0.0f;
     public bool joystickActive = true;
 
@@ -20,7 +20,7 @@ public class CameraController : MonoBehaviour
             float joyX = joystick.Horizontal;
             float joyY = joystick.Vertical;
 
-            // Снижаем порог чувствительности, чтобы вращение было плавнее
+            // Управляем поворотом головы с джойстиком
             mouseX = joyX * sensitivityJoystick;
             mouseY = joyY * sensitivityJoystick;
         }
@@ -31,12 +31,12 @@ public class CameraController : MonoBehaviour
             mouseY = Input.GetAxis("Mouse Y") * sensitivity;
         }
 
-        // Вращаем персонажа (его "тело") в горизонтальной плоскости
-        transform.parent.Rotate(Vector3.up * mouseX);
+        // Вращаем персонажа (его тело) в горизонтальной плоскости
+        transform.parent.Rotate(Vector3.up * mouseX); // Вращаем тело в горизонтальной оси
 
         // Вращаем камеру (голову) в вертикальной плоскости
         rotationX -= mouseY;
-        rotationX = Mathf.Clamp(rotationX, -maxYAngle, maxYAngle);
-        transform.localRotation = Quaternion.Euler(rotationX, 0.0f, 0.0f);
+        rotationX = Mathf.Clamp(rotationX, -maxYAngle, maxYAngle); // Ограничиваем вращение головы по вертикали
+        transform.localRotation = Quaternion.Euler(rotationX, 0.0f, 0.0f); // Вращаем только камеру
     }
 }
