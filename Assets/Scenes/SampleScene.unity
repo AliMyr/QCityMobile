@@ -2700,6 +2700,8 @@ MonoBehaviour:
   _rigidbody: {fileID: 244787801}
   _joystick: {fileID: 1789730738}
   _moveSpeed: 5
+  _cameraSensitivity: 0.1
+  _cameraTransform: {fileID: 0}
 --- !u!1001 &259047999
 PrefabInstance:
   m_ObjectHideFlags: 0
