@@ -15,6 +15,10 @@ public class CubeAI : MonoBehaviour
 
     public float stoppingDistance = 1.0f;  // Расстояние остановки
 
+    public Transform player;  // Ссылка на игрока
+    public float detectionRadius = 5f;  // Радиус обнаружения игрока
+    public float lookAtSpeed = 2f;      // Скорость, с которой ИИ поворачивается к игроку
+
     void Start()
     {
         agent = GetComponent<NavMeshAgent>();
@@ -97,10 +101,24 @@ public class CubeAI : MonoBehaviour
     // Метод для ожидания, пока агент не достигнет цели
     IEnumerator WaitUntilAgentReachesDestination()
     {
-        // Ждем, пока агент достигнет цели
+        // Ждем, пока агент достигнет цели или пока обнаружен игрок
         while (agent.pathPending || agent.remainingDistance > agent.stoppingDistance)
         {
+            ReactToPlayer();  // Проверка на игрока
             yield return null;  // Ждем следующий кадр
+        }
+    }
+
+    // Метод для реакции на игрока
+    void ReactToPlayer()
+    {
+        // Проверка, находится ли игрок в радиусе обнаружения
+        if (player != null && Vector3.Distance(transform.position, player.position) <= detectionRadius)
+        {
+            // Поворачиваемся к игроку
+            Vector3 directionToPlayer = (player.position - transform.position).normalized;
+            Quaternion lookRotation = Quaternion.LookRotation(new Vector3(directionToPlayer.x, 0, directionToPlayer.z));
+            transform.rotation = Quaternion.Slerp(transform.rotation, lookRotation, Time.deltaTime * lookAtSpeed);
         }
     }
 
@@ -138,22 +156,6 @@ public class CubeAI : MonoBehaviour
         {
             Debug.Log("Объект завершил все задачи и исчезает.");
             Destroy(gameObject);  // Удаляем объект
-        }
-    }
-
-    // Метод для обработки пути
-    IEnumerator HandlePath()
-    {
-        while (agent.pathPending)
-        {
-            yield return null;  // Ждем, пока путь будет рассчитан
-        }
-
-        if (agent.pathStatus == NavMeshPathStatus.PathPartial || agent.pathStatus == NavMeshPathStatus.PathInvalid)
-        {
-            Debug.Log("Путь заблокирован. Объект ждёт.");
-            agent.ResetPath();  // Сбрасываем путь
-            yield return new WaitForSeconds(3f);  // Ждем перед новой попыткой
         }
     }
 
