@@ -39,17 +39,7 @@ public class CubeManager : MonoBehaviour
         // ѕолучаем скрипт управлени€ кубом
         CubeAI cubeAI = newCube.GetComponent<CubeAI>();
 
-        // Ќазначаем от 2 до 6 случайных задач (waypoints) дл€ этого куба
-        int taskCount = Random.Range(2, 7);
-        Transform[] assignedWaypoints = new Transform[taskCount];
-
-        // «аполн€ем массив задач
-        for (int i = 0; i < taskCount; i++)
-        {
-            assignedWaypoints[i] = waypoints[Random.Range(0, waypoints.Length)];
-        }
-
-        // »нициализаци€ куба с назначенными задачами и точкой спавна (домом)
-        cubeAI.InitializeTasks(assignedWaypoints, home);
+        // ѕрисваиваем случайные цели дл€ работы и блуждани€
+        cubeAI.InitializeTasks(waypoints, home);
     }
 }
