@@ -121,7 +121,7 @@ public class TruckAI : MonoBehaviour
         else
         {
             // Восстанавливаем нормальную скорость, если путь свободен
-            agent.speed = 10f;
+            agent.speed = 15f;
         }
     }
 
