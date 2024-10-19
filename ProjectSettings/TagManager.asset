@@ -3,15 +3,16 @@
 --- !u!78 &1
 TagManager:
   serializedVersion: 2
-  tags: []
+  tags:
+  - carLayer
   layers:
   - Default
   - TransparentFX
   - Ignore Raycast
-  - 
+  - Cars
   - Water
   - UI
-  - 
+  - carLayer
   - 
   - 
   - 
@@ -40,4 +41,7 @@ TagManager:
   m_SortingLayers:
   - name: Default
     uniqueID: 0
+    locked: 0
+  - name: carLayer
+    uniqueID: 281055109
     locked: 0

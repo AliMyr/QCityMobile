@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.AI;
 using System.Collections;
+using System.Collections.Generic;
 
 public class CubeAI : MonoBehaviour
 {
@@ -14,10 +15,21 @@ public class CubeAI : MonoBehaviour
     public string[] disappearTaskNames; // Массив с именами задач, где объекты должны исчезать
 
     public float stoppingDistance = 1.0f;  // Расстояние остановки
+    public float deviationRange = 0.5f;    // Диапазон случайных отклонений от пути
+    public float deviationAmount = 1.0f;   // Максимальная величина отклонения для зигзагообразного движения
+    public float deviationFrequency = 0.5f; // Как часто объект будет менять направление в зигзаге
+    public float zigzagDuration = 3f;      // Как долго будет длиться зигзаг
+    public float straightDuration = 5f;    // Как долго будет двигаться прямо перед началом нового зигзага
+
+    private bool isZigzagging = false;     // Переменная, показывающая, что сейчас идет зигзаг
 
     public Transform player;  // Ссылка на игрока
     public float detectionRadius = 5f;  // Радиус обнаружения игрока
     public float lookAtSpeed = 2f;      // Скорость, с которой ИИ поворачивается к игроку
+
+    public LayerMask carLayer; // Слой, на котором находятся машины
+    public float avoidDistance = 3f; // Дистанция для обнаружения машин
+    public float avoidSpeed = 2f; // Скорость уклонения от машин
 
     void Start()
     {
@@ -32,13 +44,46 @@ public class CubeAI : MonoBehaviour
     }
 
     // Метод для инициализации задач и дома (используется CubeManager)
-    public void InitializeTasks(Transform[] taskPoints, Transform homePoint)
+    public void InitializeTasks(Transform[] allTasks, Transform homePoint)
     {
-        home = homePoint;  // Назначаем дом
-        assignedTasks = taskPoints;  // Назначаем задачи
-        Debug.Log("Назначено " + assignedTasks.Length + " задач.");
+        if (allTasks == null || allTasks.Length == 0)
+        {
+            Debug.LogError("Массив задач (allTasks) пуст или не назначен.");
+            return;
+        }
 
-        // Начинаем выполнение задач
+        if (homePoint == null)
+        {
+            Debug.LogError("Точка дома (homePoint) не назначена.");
+            return;
+        }
+
+        home = homePoint;  // Назначаем дом
+
+        // Определяем количество задач (например, от 2 до минимального значения между 6 и длиной allTasks)
+        int numTasks = Mathf.Min(Random.Range(2, 6), allTasks.Length);
+
+        // Создаем список для хранения уникальных задач
+        List<Transform> availableTasks = new List<Transform>(allTasks);
+        assignedTasks = new Transform[numTasks];
+
+        // Назначаем случайные задачи из общего списка
+        for (int i = 0; i < numTasks; i++)
+        {
+            if (availableTasks.Count == 0)
+            {
+                Debug.LogError("Нет доступных задач для назначения.");
+                break;
+            }
+
+            int randomIndex = Random.Range(0, availableTasks.Count);
+            assignedTasks[i] = availableTasks[randomIndex];
+            availableTasks.RemoveAt(randomIndex);  // Удаляем назначенную задачу из доступных, чтобы избежать дублирования
+        }
+
+        Debug.Log("Назначено " + assignedTasks.Length + " уникальных задач.");
+
+        // Запускаем выполнение задач
         StartCoroutine(PerformTaskRoutine());
     }
 
@@ -48,7 +93,7 @@ public class CubeAI : MonoBehaviour
         for (int i = 0; i < assignedTasks.Length; i++)
         {
             currentTaskIndex = i;
-            MoveToTask(assignedTasks[currentTaskIndex]);  // Переходим к следующей задаче
+            StartCoroutine(HandleZigZag(assignedTasks[currentTaskIndex]));  // Управляем зигзагом
 
             // Ждем, пока бот не дойдет до цели или столкнется с препятствием
             yield return StartCoroutine(WaitUntilAgentReachesDestination());
@@ -84,17 +129,43 @@ public class CubeAI : MonoBehaviour
         Disappear();
     }
 
-    // Метод для перемещения к задаче
-    void MoveToTask(Transform task)
+    // Корутин для управления чередованием зигзага и прямого движения
+    IEnumerator HandleZigZag(Transform task)
     {
-        if (task != null)
+        while (Vector3.Distance(transform.position, task.position) > agent.stoppingDistance)
         {
-            Debug.Log("Направляемся к задаче: " + task.name);
-            agent.SetDestination(task.position);  // Задаем точку назначения
+            // Двигаемся прямо
+            isZigzagging = false;
+            agent.SetDestination(task.position);
+            yield return new WaitForSeconds(straightDuration); // Двигаемся прямо определенное время
+
+            // Начинаем зигзаг
+            isZigzagging = true;
+            yield return StartCoroutine(ZigZagMovement(task.position)); // Включаем зигзаг на некоторое время
+
+            // Возвращаемся к прямому движению после зигзага
+            isZigzagging = false;
         }
-        else
+    }
+
+    // Корутин для зигзагообразного движения
+    IEnumerator ZigZagMovement(Vector3 destination)
+    {
+        float zigzagEndTime = Time.time + zigzagDuration;  // Устанавливаем время окончания зигзага
+
+        while (Time.time < zigzagEndTime && isZigzagging)
         {
-            Debug.LogError("Задача не назначена!");
+            // Вычисляем случайное смещение влево или вправо
+            Vector3 deviation = new Vector3(Random.Range(-deviationAmount, deviationAmount), 0, Random.Range(-deviationAmount, deviationAmount));
+
+            // Задаем новую точку назначения с отклонением
+            Vector3 zigzagTarget = destination + deviation;
+
+            // Устанавливаем новую точку назначения
+            agent.SetDestination(zigzagTarget);
+
+            // Ждем немного перед следующим изменением направления
+            yield return new WaitForSeconds(deviationFrequency);
         }
     }
 
@@ -104,8 +175,51 @@ public class CubeAI : MonoBehaviour
         // Ждем, пока агент достигнет цели или пока обнаружен игрок
         while (agent.pathPending || agent.remainingDistance > agent.stoppingDistance)
         {
+            AvoidCars();  // Проверка и уклонение от машин
             ReactToPlayer();  // Проверка на игрока
             yield return null;  // Ждем следующий кадр
+        }
+    }
+
+    // Метод для избегания столкновений с машинами
+    void AvoidCars()
+    {
+        RaycastHit hit;
+        int numRays = 8; // Количество лучей для "звезды"
+        float angleStep = 360f / numRays; // Шаг угла между лучами
+        bool carDetected = false;
+        Vector3 avoidDirection = Vector3.zero;
+
+        // Цикл для отправки лучей во все стороны
+        for (int i = 0; i < numRays; i++)
+        {
+            // Рассчитываем направление луча под углом
+            Vector3 rayDirection = Quaternion.Euler(0, angleStep * i, 0) * transform.forward;
+
+            // Отображаем лучи для отладки
+            Debug.DrawRay(transform.position, rayDirection * avoidDistance, Color.red);
+
+            // Отправляем луч
+            if (Physics.Raycast(transform.position, rayDirection, out hit, avoidDistance, carLayer))
+            {
+                Debug.Log("Обнаружена машина: " + hit.collider.gameObject.name);
+                avoidDirection = transform.position - hit.point; // Направление уклонения — от машины
+                carDetected = true;
+                break; // Прерываем цикл, если обнаружена машина
+            }
+        }
+
+        // Если машина обнаружена, меняем направление движения
+        if (carDetected)
+        {
+            avoidDirection.y = 0; // Убираем влияние оси Y
+            avoidDirection.Normalize(); // Нормализуем вектор направления
+
+            // Вычисляем новую цель для уклонения, отклоняясь в сторону от машины
+            Vector3 newDestination = transform.position + avoidDirection * avoidDistance;
+
+            // Плавно изменяем направление движения AI
+            agent.SetDestination(newDestination);
         }
     }
 
@@ -157,42 +271,5 @@ public class CubeAI : MonoBehaviour
             Debug.Log("Объект завершил все задачи и исчезает.");
             Destroy(gameObject);  // Удаляем объект
         }
-    }
-
-    // Метод для поиска ближайшей задачи
-    Transform FindClosestTask()
-    {
-        Transform closestTask = null;
-        float shortestPath = Mathf.Infinity;
-
-        foreach (Transform task in assignedTasks)
-        {
-            NavMeshPath path = new NavMeshPath();
-            agent.CalculatePath(task.position, path);
-
-            float pathLength = CalculatePathLength(path);
-
-            if (path.status == NavMeshPathStatus.PathComplete && pathLength < shortestPath)
-            {
-                shortestPath = pathLength;
-                closestTask = task;
-            }
-        }
-
-        return closestTask;
-    }
-
-    // Метод для расчета длины пути
-    float CalculatePathLength(NavMeshPath path)
-    {
-        float length = 0f;
-        if (path.corners.Length < 2) return length;
-
-        for (int i = 1; i < path.corners.Length; i++)
-        {
-            length += Vector3.Distance(path.corners[i - 1], path.corners[i]);
-        }
-
-        return length;
     }
 }
