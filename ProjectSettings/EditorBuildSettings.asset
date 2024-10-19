@@ -11,9 +11,12 @@ EditorBuildSettings:
   - enabled: 0
     path: Assets/Scenes/2SampleScene dubl 1.unity
     guid: 12e6c33ee61163a459a5addbbac99acc
-  - enabled: 1
+  - enabled: 0
     path: Assets/Scenes/SampleScene dubl.unity
     guid: 785df7e70a414b94db18ecd697696c67
+  - enabled: 1
+    path: Assets/Scenes/777SampleScene dubl 2.unity
+    guid: d2bf7a27e017bb8438b96ea8a6983000
   m_configObjects:
     com.unity.adaptiveperformance.loader_settings: {fileID: 11400000, guid: 62eb6b8ed662c774c9967186b3096f66,
       type: 2}
